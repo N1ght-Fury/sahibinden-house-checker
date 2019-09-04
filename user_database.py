@@ -2,14 +2,15 @@ import sqlite3
 
 class User():
 
-    def __init__(self,mail,stat):
+    def __init__(self,mail,stat,links):
 
         self.mail = mail
         self.stat = stat
+        self.links = links
 
     def __str__(self):
 
-        return ("\n-------------------\nMail: {}\nStat: {}\n-------------------").format(self.mail, self.stat)
+        return ("\n-------------------\nMail: {}\nStat: {}\nLinks: {}\n-------------------").format(self.mail, self.stat, self.links)
 
 
 class Database_User():
@@ -26,7 +27,8 @@ class Database_User():
         query = "create table if not exists " \
                 "Tbl_Mail (" \
                 "Mail text," \
-                "Stat boolean)"
+                "Stat boolean," \
+                "Links text)"
 
         self.cursor.execute(query)
         self.connection.commit()
@@ -40,7 +42,7 @@ class Database_User():
         if (len(total) != 0):
 
             for i in total:
-                info = User(i[0],i[1])
+                info = User(i[0],i[1],i[2])
                 print(info)
 
         else:
@@ -61,12 +63,12 @@ class Database_User():
 
     def add_mail(self,User):
 
-        query = "insert into tbl_mail values (@p1,@p2)"
-        self.cursor.execute(query,(User.mail,User.stat))
+        query = "insert into tbl_mail values (@p1,@p2,@p3)"
+        self.cursor.execute(query,(User.mail,User.stat,User.links))
         self.connection.commit()
 
     def delete_mail(self,mail):
-
+        
         query = "delete from tbl_mail where mail = @p1"
         self.cursor.execute(query,(mail,))
         self.connection.commit()
@@ -75,6 +77,12 @@ class Database_User():
 
         query = "update tbl_mail set mail = @p1 where mail = @p2"
         self.cursor.execute(query,(new_mail,ex_mail))
+        self.connection.commit()
+
+    def update_link(self,link,mail):
+    	
+        query = "update tbl_mail set link = @p1 where mail = @p2"
+        self.cursor.execute(query,(link,mail,))
         self.connection.commit()
 
     def update_stat(self,mail,stat):
@@ -100,3 +108,9 @@ class Database_User():
         self.cursor.execute(query)
         user_list = self.cursor.fetchall()
         return user_list
+
+    def get_link(self,mail):
+        query = "select Links from tbl_mail where mail = @p1"
+        self.cursor.execute(query,(mail,))
+        links = self.cursor.fetchall()
+        return links
