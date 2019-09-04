@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import sys
 import time
+from datetime import datetime
 
 import inform_user
 import user_database
@@ -18,43 +19,74 @@ def get_soup(url):
 	soup = BeautifulSoup(html_content, "html.parser")
 	return soup
 
-def get_house_details():
-	url = 'https://www.sahibinden.com/satilik?address_quarter=23060&address_quarter=23061&address_quarter=23062&address_quarter=23063&address_town=442&a20=38472&price_max=150000&address_city=34'
+def get_house_details(url):
+	index = [0,2,4]
 	soup = get_soup(url)
 
-	house_link = "https://www.sahibinden.com" + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('tr').td.a['href'])
-	title = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('a', {'class':'classifiedTitle'}).text).replace('\n','').replace('    ','')
-	price = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('td', {'class':'searchResultsPriceValue'}).div.text).replace('\n','').replace(' ','')
-	m2 = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('td', {'class':'searchResultsAttributeValue'}).text).replace('\n','').replace('                    ','')
-	date = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('td', {'class':'searchResultsDateValue'}).span.text)
-	neighborhood = "İstanbul / " + "Pendik / " + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find('td', {'class':'searchResultsLocationValue'}).text).replace('\n','').replace('                        ','')
-	room = 'Stüdyo (1+0)'
+	house_links = []
+	titles = []
+	prices = []
+	m2 = []
+	dates = []
+	neighborhoods = []
+	rooms = []
 
-	soup = get_soup(house_link)
-	img = soup.find('img',{'class':'stdImg'})['src']
+	for i in range(3):
+		house_links.append("https://www.sahibinden.com" + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('a',{'class':'classifiedTitle'})[i]['href']))
+		titles.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('a', {'class':'classifiedTitle'})[i].text).replace('\n','').replace('    ',''))
+		prices.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsPriceValue'})[i].div.text).replace('\n','').replace(' ',''))
+		m2.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index[i]].text).replace('\n','').replace('                    ',''))
+		date = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsDateValue'})[i].span.text)
+		date = date.split(' ')
+		dates.append(str(int(date[0])) + " " + str(date[1]))
+		neighborhoods.append("İstanbul / " + "Pendik / " + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsLocationValue'})[i].text).replace('\n','').replace('                        ',''))
+		rooms.append('Stüdyo (1+0)')
 
-	return [house_link,title,price,m2,date,neighborhood,room,img]
+	return [house_links,titles,prices,m2,dates,neighborhoods,rooms]
 
 def main_operation():
+	month_in_turkish = {'1':'Ocak', '2':'Şubat', '3':'Mart', '4':'Nisan', '5':'Mayıs', '6':'Haziran', '7':'Temmuz', '8':'Ağustos', '9':'Eylül', '10':'Ekim', '11':'Kasım', '12':'Aralık'}
+	
+	day = datetime.today().day
+	month = datetime.today().month
+	todays_date = str(day) + " " + str(month_in_turkish[str(month)])
+
 	while True:
 		if (Mail.total_user() == 0):
 			print("No user found on database. You have to add at least one user to continue.")
 			user_mail = input("Mail: ").lower()
+			link = input('Link: ')
+			link = "['" + str(link) + "']"
 
-			user_info = user_database.User(user_mail, True)
+			user_info = user_database.User(user_mail, True, link)
 			Mail.add_mail(user_info)
 
 		try:
-			house_details = get_house_details()
-			if (not House.check_if_house_exists(house_details[0],house_details[7])):
-				New_House = house_database.House(house_details[0],house_details[1],house_details[2],house_details[3],house_details[4],house_details[5],house_details[6],house_details[7])
-				House.add_house(New_House)
+			mail_list = Mail.get_mails()
+			for i in mail_list:
+				if (not i[1]):
+					break
 
-				mail_list = Mail.get_mails()
-				text_mail = text_of_mail.html_text(house_details[0],house_details[1],house_details[2],house_details[3],house_details[4],house_details[5],house_details[6],house_details[7])
+				links = eval(i[2])
+				
+				for j in links:
+					
+					house_details = get_house_details(j)
 
-				for user in mail_list:
-					inform_user.send_mail(user[0], text_mail)
+					for k in range(3):
+
+						if (not House.check_if_house_exists(house_details[0][k]) and house_details[4][k] == todays_date):
+							
+							soup = get_soup(house_details[0][k])
+							img = soup.find('img',{'class':'stdImg'})['src']
+
+							New_House = house_database.House(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
+							House.add_house(New_House)
+							House.add_house(New_House,True)
+
+							text_mail = text_of_mail.html_text(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
+
+							inform_user.send_mail(i[0], text_mail)
 
 			print('Process finished. Waiting for 3 min.')
 			time.sleep(180)
@@ -94,6 +126,9 @@ def user_operations():
 			print("Would you want to receive mails? (Y/N):")
 			user_stat = input().upper()
 
+			link = input('Link: ')
+			link = "['" + link + "']"
+
 			if (user_stat == "Y"):
 				user_stat = True
 				text = new_mail + " successfully added to database."
@@ -106,7 +141,7 @@ def user_operations():
 				print("\nInvalid command. Try again.\n")
 				continue
 
-			new_user = user_database.User(new_mail, user_stat)
+			new_user = user_database.User(new_mail, user_stat,link)
 			Mail.add_mail(new_user)
 
 			print(text)
@@ -154,7 +189,7 @@ def user_operations():
 
 			print("What would you want to change? "
 				"To go back, enter 'q' , to change mail, "
-				"enter M, to change status, enter S:")
+				"enter M, to change status, enter S, to change link, enter L (you will be asked to enter index number the link you want to delete):")
 
 			change_what = input().upper()
 
@@ -177,6 +212,22 @@ def user_operations():
 				else:
 					print("Wrong command. Please try again.")
 					continue
+			elif (change_what == 'L'):
+
+				print('Enter index number: ')
+				index = int(input('Index: '))
+
+				#try:
+				links = Mail.get_link(update_mail)
+				print(eval(links))
+				links.pop(index)
+				links = str(links)
+				Mail.update_link(link,mail)
+				print('Link at index' + str(index) + ' deleted successfully.')
+
+				#except Exception as e:
+					#print('Out of range. Try again')
+
 
 			elif (change_what == "Q"):
 				print("You are back to menu.")
