@@ -64,29 +64,33 @@ def main_operation():
 		try:
 			mail_list = Mail.get_mails()
 			for i in mail_list:
-				if (not i[1]):
-					break
 
 				links = eval(i[2])
 				
 				for j in links:
-					
 					house_details = get_house_details(j)
 
 					for k in range(3):
 
-						if (not House.check_if_house_exists(house_details[0][k]) and house_details[4][k] == todays_date):
+						if (not House.check_if_house_exists(house_details[0][k] + ':' + i[0]) and house_details[4][k] == todays_date):
 							
 							soup = get_soup(house_details[0][k])
 							img = soup.find('img',{'class':'stdImg'})['src']
 
-							New_House = house_database.House(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
+							New_House = house_database.House(house_details[0][k] + ':' + i[0],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
 							House.add_house(New_House)
 							House.add_house(New_House,True)
 
 							text_mail = text_of_mail.html_text(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
 
 							inform_user.send_mail(i[0], text_mail)
+
+			
+			todays_day = datetime.today().day
+
+			if (todays_day != day):
+				House.clear_posts(str(day))
+				day = todays_date
 
 			print('Process finished. Waiting for 3 min.')
 			time.sleep(180)
@@ -188,8 +192,8 @@ def user_operations():
 				continue
 
 			print("What would you want to change? "
-				"To go back, enter 'q' , to change mail, "
-				"enter M, to change status, enter S, to change link, enter L (you will be asked to enter index number the link you want to delete):")
+				"To go back, enter 'q' , to change mail "
+				"enter M, to change status enter S, to change link enter L (you will be asked to enter index number the link you want to delete):")
 
 			change_what = input().upper()
 
@@ -214,19 +218,38 @@ def user_operations():
 					continue
 			elif (change_what == 'L'):
 
-				print('Enter index number: ')
-				index = int(input('Index: '))
+				link = str(Mail.get_link(update_mail))
+				link = eval(link.replace('(',"").replace('"',"").replace(')',"")[1:len(link)-6])
 
-				#try:
-				links = Mail.get_link(update_mail)
-				print(eval(links))
-				links.pop(index)
-				links = str(links)
-				Mail.update_link(link,mail)
-				print('Link at index' + str(index) + ' deleted successfully.')
+				print('Add/delete/update? ')
+				process = input().upper()
 
-				#except Exception as e:
-					#print('Out of range. Try again')
+				if (process == 'ADD'):
+					new_link = input('Enter link: ')
+					link.append(new_link)
+					Mail.update_link(str(link),update_mail)
+					print('Link added successfully.')
+
+				elif (process == 'DELETE'):
+					print(str(link))
+					print('Enter index number: ')
+					index = int(input('Index: '))
+					link.pop(index)
+					Mail.update_link(str(link),update_mail)
+					print('Link deleted successfully.')
+
+				elif (process == 'UPDATE'):
+					print(str(link))
+					print('Enter index number: ')
+					index = int(input('Index: '))
+					new_link = input('Enter link: ')
+					link[index] = new_link
+					Mail.update_link(str(link),update_mail)
+					print('Link updated successfully.')
+
+				else:
+					print("Wrong command. Please try again.")
+					continue
 
 
 			elif (change_what == "Q"):
