@@ -81,7 +81,7 @@ class Database_User():
 
     def update_link(self,link,mail):
     	
-        query = "update tbl_mail set link = @p1 where mail = @p2"
+        query = "update tbl_mail set links = @p1 where mail = @p2"
         self.cursor.execute(query,(link,mail,))
         self.connection.commit()
 
@@ -110,7 +110,7 @@ class Database_User():
         return user_list
 
     def get_link(self,mail):
-        query = "select Links from tbl_mail where mail = @p1"
+        query = "select links from tbl_mail where mail = @p1"
         self.cursor.execute(query,(mail,))
         links = self.cursor.fetchall()
         return links
