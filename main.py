@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import sys
 import time
 from datetime import datetime
+import traceback
 
 import inform_user
 import user_database
@@ -75,7 +76,11 @@ def main_operation():
 						if (not House.check_if_house_exists(house_details[0][k] + ':' + i[0]) and house_details[4][k] == todays_date):
 							
 							soup = get_soup(house_details[0][k])
-							img = soup.find('img',{'class':'stdImg'})['src']
+							
+							try:
+								img = soup.find('img',{'class':'stdImg'})['src']
+							except Exception as e:
+								img = 'https://s0.shbdn.com/assets/images/no-image:c63bfbc40fa75b991c3a49ff4457c53e.png'
 
 							New_House = house_database.House(house_details[0][k] + ':' + i[0],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
 							House.add_house(New_House)
@@ -97,7 +102,7 @@ def main_operation():
 
 		except Exception as e:
 			print('Something unexpected happened. Waiting for 3 min.')
-			print(e)
+			print(traceback.format_exc())
 			time.sleep(180)
 
 
