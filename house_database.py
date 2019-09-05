@@ -67,3 +67,9 @@ class Database_Post():
             query = "insert into Tbl_Posts values (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8)"
         self.cursor.execute(query,(House.house_link,House.title,House.price,House.m2,House.date,House.neighborhood,House.room,House.img))
         self.connection.commit()
+
+    def clear_posts(self,day):
+
+        query = "delete from tbl_posts where date like '%" + day + "%'"
+        self.cursor.execute(query)
+        self.connection.commit()
