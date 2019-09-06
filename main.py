@@ -53,10 +53,6 @@ def get_house_details(url):
 		neighborhoods.append("İstanbul / " + "Pendik / " + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsLocationValue'})[i].text).replace('\n','').replace('                        ',''))
 		rooms.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index_room[i]].text).replace('\n','').replace('                    ',''))
 
-
-
-	print(rooms)
-	print(m2)
 	return [house_links,titles,prices,m2,dates,neighborhoods,rooms]
 
 def main_operation():
