@@ -13,6 +13,15 @@ import text_of_mail
 House = house_database.Database_Post()
 Mail = user_database.Database_User()
 
+def get_todays_date():
+	month_in_turkish = {'1':'Ocak', '2':'Şubat', '3':'Mart', '4':'Nisan', '5':'Mayıs', '6':'Haziran', '7':'Temmuz', '8':'Ağustos', '9':'Eylül', '10':'Ekim', '11':'Kasım', '12':'Aralık'}
+	
+	day = datetime.today().day
+	month = datetime.today().month
+	todays_date = str(day) + " " + str(month_in_turkish[str(month)])
+
+	return [todays_date,day]
+
 def get_soup(url):
 	headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 	response = requests.get(url, headers=headers)
@@ -21,7 +30,8 @@ def get_soup(url):
 	return soup
 
 def get_house_details(url):
-	index = [0,2,4]
+	index_m2 = [0,2,4]
+	index_room = [1,3,5]
 	soup = get_soup(url)
 
 	house_links = []
@@ -36,21 +46,22 @@ def get_house_details(url):
 		house_links.append("https://www.sahibinden.com" + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('a',{'class':'classifiedTitle'})[i]['href']))
 		titles.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('a', {'class':'classifiedTitle'})[i].text).replace('\n','').replace('    ',''))
 		prices.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsPriceValue'})[i].div.text).replace('\n','').replace(' ',''))
-		m2.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index[i]].text).replace('\n','').replace('                    ',''))
+		m2.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index_m2[i]].text).replace('\n','').replace('                    ',''))
 		date = str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsDateValue'})[i].span.text)
 		date = date.split(' ')
 		dates.append(str(int(date[0])) + " " + str(date[1]))
 		neighborhoods.append("İstanbul / " + "Pendik / " + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsLocationValue'})[i].text).replace('\n','').replace('                        ',''))
-		rooms.append('Stüdyo (1+0)')
+		rooms.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index_room[i]].text).replace('\n','').replace('                    ',''))
 
+
+
+	print(rooms)
+	print(m2)
 	return [house_links,titles,prices,m2,dates,neighborhoods,rooms]
 
 def main_operation():
-	month_in_turkish = {'1':'Ocak', '2':'Şubat', '3':'Mart', '4':'Nisan', '5':'Mayıs', '6':'Haziran', '7':'Temmuz', '8':'Ağustos', '9':'Eylül', '10':'Ekim', '11':'Kasım', '12':'Aralık'}
-	
-	day = datetime.today().day
-	month = datetime.today().month
-	todays_date = str(day) + " " + str(month_in_turkish[str(month)])
+	todays_date = get_todays_date()[0]
+	day = get_todays_date()[1]
 
 	while True:
 		if (Mail.total_user() == 0):
@@ -91,11 +102,12 @@ def main_operation():
 							inform_user.send_mail(i[0], text_mail)
 
 			
-			todays_day = datetime.today().day
+			todays_day = get_todays_date()[1]
 
 			if (todays_day != day):
 				House.clear_posts(str(day))
-				day = todays_date
+				todays_date = get_todays_date()[0]
+				day = get_todays_date()[1]
 
 			print('Process finished. Waiting for 3 min.')
 			time.sleep(180)
