@@ -41,6 +41,7 @@ def get_house_details(url):
 	dates = []
 	neighborhoods = []
 	rooms = []
+	imgs = []
 
 	for i in range(3):
 		house_links.append("https://www.sahibinden.com" + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('a',{'class':'classifiedTitle'})[i]['href']))
@@ -52,8 +53,12 @@ def get_house_details(url):
 		dates.append(str(int(date[0])) + " " + str(date[1]))
 		neighborhoods.append("İstanbul / " + "Pendik / " + str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsLocationValue'})[i].text).replace('\n','').replace('                        ',''))
 		rooms.append(str(soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsAttributeValue'})[index_room[i]].text).replace('\n','').replace('                    ',''))
+		img = soup.find('tbody', {'class':'searchResultsRowClass'}).find_all('td', {'class':'searchResultsLargeThumbnail'})[i].img['src']
+		img = img.replace('image5', 'i0').replace('sahibinden', 'shbdn').replace('thmb', 'x5')
+		#img = 'https://s0.shbdn.com/assets/images/no-image:c63bfbc40fa75b991c3a49ff4457c53e.png'
+		imgs.append(img)
 
-	return [house_links,titles,prices,m2,dates,neighborhoods,rooms]
+	return [house_links,titles,prices,m2,dates,neighborhoods,rooms,imgs]
 
 def main_operation():
 	todays_date = get_todays_date()[0]
@@ -81,19 +86,12 @@ def main_operation():
 					for k in range(3):
 
 						if (not House.check_if_house_exists(house_details[0][k] + ':' + i[0]) and house_details[4][k] == todays_date):
-							
-							soup = get_soup(house_details[0][k])
-							
-							try:
-								img = soup.find('img',{'class':'stdImg'})['src']
-							except Exception as e:
-								img = 'https://s0.shbdn.com/assets/images/no-image:c63bfbc40fa75b991c3a49ff4457c53e.png'
 
-							New_House = house_database.House(house_details[0][k] + ':' + i[0],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
+							New_House = house_database.House(house_details[0][k] + ':' + i[0],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],house_details[7][k])
 							House.add_house(New_House)
 							House.add_house(New_House,True)
 
-							text_mail = text_of_mail.html_text(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],img)
+							text_mail = text_of_mail.html_text(house_details[0][k],house_details[1][k],house_details[2][k],house_details[3][k],house_details[4][k],house_details[5][k],house_details[6][k],house_details[7][k])
 
 							inform_user.send_mail(i[0], text_mail)
 
@@ -108,7 +106,7 @@ def main_operation():
 			print('Process finished. Waiting for 3 min.')
 			time.sleep(180)
 
-		except Exception as e:
+		except:
 			print('Something unexpected happened. Waiting for 3 min.')
 			print(traceback.format_exc())
 			time.sleep(180)
